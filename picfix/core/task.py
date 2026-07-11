@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
+from picfix.core.nfo import NFO
 from picfix.core.params import DesignParams
 from picfix.core.proposal import GateDecision, Proposal
 from picfix.core.truth import RootCause
@@ -58,6 +59,7 @@ class TaskResult(BaseModel):
     tokens_out: int
     r3_triggered: bool
     proposal_events: list[ProposalEvent]
+    nfos: list[NFO]
     sds_values: list[float]
     rollbacks: int
     verifier_version: int

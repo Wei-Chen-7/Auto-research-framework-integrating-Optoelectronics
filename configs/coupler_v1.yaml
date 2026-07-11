@@ -39,10 +39,10 @@ task_generation:             # random offsets from golden params (feasible by co
 
 llm:
   mode: mock                 # mock | api  (CLI --mock-llm / --api-llm overrides)
-  model: claude-sonnet-5
-  temperature: 0.0
-  max_tokens: 1024
-  seed: 7
+  model: claude-opus-4-8
+  temperature: 0.0           # recorded for reproducibility; current Claude models
+  seed: 7                    # reject non-default sampling params so it is not sent.
+  max_tokens: 1024           # seed drives the deterministic mock policy.
 
 r3:
   consecutive_task_failures: 3
