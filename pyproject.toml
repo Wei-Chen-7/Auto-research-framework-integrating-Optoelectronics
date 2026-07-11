@@ -1,0 +1,28 @@
+[project]
+name = "picfix"
+version = "0.1.0"
+description = "PIC-fix: four-arm controlled experiment platform validating governed self-improving agents (RAE) on photonic IC design tasks"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "numpy>=1.26",
+    "matplotlib>=3.8",
+    "pyyaml>=6.0",
+    "anthropic>=0.40",
+]
+
+[project.optional-dependencies]
+layout = ["gdsfactory>=8.0"]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["picfix"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

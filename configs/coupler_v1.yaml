@@ -1,0 +1,63 @@
+# PIC-fix milestone 1: directional coupler, analytical backend, four arms.
+# `calibration.frozen_constants` and `golden.params` are written by
+# scripts/calibrate.py; the runner refuses to start while calibrated=false.
+
+experiment:
+  name: coupler_v1
+  seed: 20260711
+  tasks_per_arm: 5
+  repeats: 1                 # k; formal runs use 3
+  budget_sim_calls: 15       # hard per-task budget, identical in all arms
+  arms: [baseline, fixed_loop, meta_unguarded, meta_governed]
+  output_dir: runs
+
+spec:                        # frozen task spec — the judge's single source of truth
+  device: directional_coupler
+  band_nm: [1530.0, 1565.0]
+  visible_grid_points: 15
+  hidden_grid_points: 61
+  split_target: 0.5
+  split_tolerance: 0.02      # |cross ratio - 0.5| <= 0.02 at every grid point
+  il_max_db: 0.3
+  corner_offset_nm: 5.0      # hidden suite: gap and width perturbed by +/- this
+
+drc:                         # frozen DRC rules
+  min_gap_nm: 100.0
+  min_width_nm: 400.0
+  max_width_nm: 600.0
+  min_length_um: 1.0
+  max_length_um: 60.0
+
+noise:                       # agent-visible feedback noise (judge is noiseless)
+  sigma_ratio: 0.005
+  sigma_il_db: 0.01
+
+task_generation:             # random offsets from golden params (feasible by construction)
+  gap_offset_nm: [15.0, 60.0]      # |offset| range; sign randomized
+  length_offset_um: [2.0, 6.0]
+  width_offset_nm: [10.0, 30.0]
+
+llm:
+  mode: mock                 # mock | api  (CLI --mock-llm / --api-llm overrides)
+  model: claude-sonnet-5
+  temperature: 0.0
+  max_tokens: 1024
+  seed: 7
+
+r3:
+  consecutive_task_failures: 3
+  sds_threshold: 0.5
+  proposals_per_trigger: 2
+
+search_strategy:             # initial (evolvable in meta arms, versioned)
+  max_step_gap_nm: 40.0
+  max_step_length_um: 5.0
+  max_step_width_nm: 20.0
+  early_stop_margin: 0.0     # internal heuristic threshold (proposable)
+
+calibration:
+  calibrated: false
+  frozen_constants: {}
+
+golden:
+  params: {}
