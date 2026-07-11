@@ -1,0 +1,30 @@
+{
+  "constants_sha256": "3e314b23f83f96fe8898e37348d06784af2098f5d61a22084ea28c3d40c21300",
+  "device": "directional_coupler",
+  "expected": {
+    "center_ratio": 0.5000018366025518,
+    "insertion_loss_db": 0.19371127777746835
+  },
+  "golden_params": {
+    "gap_nm": 200.0,
+    "length_um": 15.708,
+    "width_nm": 500.0
+  },
+  "regression_starts": [
+    {
+      "gap_nm": 240.0,
+      "length_um": 11.708,
+      "width_nm": 500.0
+    },
+    {
+      "gap_nm": 170.0,
+      "length_um": 20.708,
+      "width_nm": 520.0
+    },
+    {
+      "gap_nm": 220.0,
+      "length_um": 18.708,
+      "width_nm": 485.0
+    }
+  ]
+}
