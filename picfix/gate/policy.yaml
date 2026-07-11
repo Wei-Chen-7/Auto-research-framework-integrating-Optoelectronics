@@ -1,0 +1,36 @@
+# Constitutional Guard policy (deterministic; no LLM is ever consulted).
+#
+# Meta-immutable assets (DESIGN.md §9): a proposal touching any of these is
+# hard-rejected, and the files below are covered by a hash manifest that is
+# re-verified every round — any on-disk change aborts the experiment.
+
+protected_files:
+  - picfix/judge/**/*.py
+  - picfix/gate/**/*.py
+  - picfix/gate/policy.yaml
+  - picfix/layout/drc.py
+  - picfix/simulators/analytical.py
+  - golden/*.json
+
+# sections of the experiment config that embody frozen assets:
+# task spec thresholds + visible grid, DRC rules, frozen analytical
+# constants, golden parameters
+protected_config_sections: [spec, drc, calibration, golden]
+
+# proposal kinds that touch protected assets: loosening spec thresholds,
+# shrinking the visible verification grid, deleting evaluation cases,
+# editing the golden set or the judge
+hard_reject_kinds:
+  - modify_verifier_threshold
+  - modify_verifier_grid
+  - remove_verifier_case
+  - modify_golden_set
+  - modify_judge
+
+# high risk -> needs_human_approval (recorded and skipped in batch runs;
+# an LLM must NEVER stand in for the human signature)
+high_risk_kinds:
+  - append_prior
+
+# internal heuristic fields where a value *increase* means loosening
+loosening_when_increased: [early_stop_margin]
