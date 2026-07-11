@@ -35,7 +35,8 @@ noise:                       # agent-visible feedback noise (judge is noiseless)
 task_generation:             # random offsets from golden params (feasible by construction)
   gap_offset_nm: [15.0, 60.0]      # |offset| range; sign randomized
   length_offset_um: [2.0, 6.0]
-  width_offset_nm: [10.0, 30.0]
+  width_offset_nm: [60.0, 140.0]   # wide enough that some inits violate width DRC
+                                   # while optics still pass -> real optical/DRC conflicts
 
 llm:
   mode: mock                 # mock | api  (CLI --mock-llm / --api-llm overrides)
@@ -60,11 +61,11 @@ calibration:
   frozen_constants:
     kappa0_per_um: 0.05
     gap_ref_nm: 200.0
-    gap_decay_nm: 400.0
+    gap_decay_nm: 600.0
     width_ref_nm: 500.0
     width_sens_per_nm: 0.0006
     lambda0_nm: 1547.5
-    lambda_sens_per_nm: 0.0003
+    lambda_sens_per_nm: 0.0002
     il_a_db_per_um: 0.01
     il_b_db: 2.0
     il_g0_nm: 50.0
