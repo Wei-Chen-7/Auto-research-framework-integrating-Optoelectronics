@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -39,7 +40,10 @@ class TaskGenerationConfig(BaseModel):
 class LLMConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    mode: str  # "mock" | "api"
+    mode: Literal["mock", "api"]
+    provider: Literal["anthropic", "openai_compatible"] = "anthropic"
+    base_url: str | None = None    # e.g. https://api.deepseek.com for DeepSeek
+    api_key_env: str = "ANTHROPIC_API_KEY"
     model: str
     temperature: float
     max_tokens: int

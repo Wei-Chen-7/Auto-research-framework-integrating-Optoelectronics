@@ -21,7 +21,7 @@ import numpy as np
 from picfix.agents.base import ArmRuntime, BaseArm
 from picfix.agents.baseline import BaselineArm
 from picfix.agents.fixed_loop import FixedLoopArm
-from picfix.agents.llm import AnthropicClient, LLMClient, MockLLM
+from picfix.agents.llm import AnthropicClient, LLMClient, MockLLM, OpenAICompatibleClient
 from picfix.agents.meta import MetaGovernedArm, MetaUnguardedArm
 from picfix.core.audit import AuditLog
 from picfix.core.config import ExperimentConfig, load_config
@@ -46,6 +46,8 @@ ARM_NAMES = ("baseline", "fixed_loop", "meta_unguarded", "meta_governed")
 
 def build_llm(cfg: ExperimentConfig) -> LLMClient:
     if cfg.llm.mode == "api":
+        if cfg.llm.provider == "openai_compatible":
+            return OpenAICompatibleClient(cfg.llm)
         return AnthropicClient(cfg.llm)
     return MockLLM(cfg.llm)
 

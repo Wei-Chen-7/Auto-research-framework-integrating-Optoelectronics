@@ -6,14 +6,22 @@ context (a real model sees only text), while the mock policy engine reads
 it to produce deterministic, seed-reproducible behaviour so the full
 pipeline runs without an API key.
 
-Note on sampling params: Opus 4.8 / Sonnet 5 reject non-default
-``temperature``/``top_p``/``top_k`` with a 400, so the configured
-temperature is recorded for the run metadata but never sent.
+Providers: :class:`AnthropicClient` (Claude), :class:`OpenAICompatibleClient`
+(any OpenAI-compatible endpoint — DeepSeek, OpenAI, Qwen, Kimi, GLM, … —
+selected via ``llm.base_url`` + ``llm.api_key_env``). All four arms must
+share ONE base model per run (DESIGN.md §5/§11); the provider only changes
+which model that is.
+
+Note on sampling params: current Claude models (Opus 4.8 / Sonnet 5)
+reject non-default ``temperature`` with a 400, so the Anthropic client
+records it without sending; OpenAI-compatible providers accept it and the
+configured value is sent as-is.
 """
 from __future__ import annotations
 
 import json
 import math
+import os
 from typing import Any, Protocol
 
 import numpy as np
@@ -61,6 +69,58 @@ class AnthropicClient:
             text=text,
             tokens_in=response.usage.input_tokens,
             tokens_out=response.usage.output_tokens,
+        )
+
+
+class OpenAICompatibleClient:
+    """Adapter for OpenAI-compatible chat-completion endpoints.
+
+    DeepSeek example (configs/coupler_v1.yaml)::
+
+        llm:
+          mode: api
+          provider: openai_compatible
+          base_url: https://api.deepseek.com
+          api_key_env: DEEPSEEK_API_KEY
+          model: deepseek-chat
+
+    ``client`` is injectable for tests; by default the official ``openai``
+    SDK client is constructed against ``base_url``.
+    """
+
+    def __init__(self, config: LLMConfig, client: Any | None = None) -> None:
+        self._config = config
+        if client is not None:
+            self._client = client
+            return
+        api_key = os.environ.get(config.api_key_env)
+        if not api_key:
+            raise RuntimeError(
+                f"environment variable {config.api_key_env} is not set — "
+                "configure the provider API key before running with --api-llm"
+            )
+        import openai
+
+        self._client = openai.OpenAI(api_key=api_key, base_url=config.base_url)
+
+    def complete(
+        self, system: str, user: str, context: dict[str, Any] | None = None
+    ) -> LLMResponse:
+        response = self._client.chat.completions.create(
+            model=self._config.model,
+            max_tokens=self._config.max_tokens,
+            temperature=self._config.temperature,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        )
+        text = response.choices[0].message.content or ""
+        usage = getattr(response, "usage", None)
+        return LLMResponse(
+            text=text,
+            tokens_in=getattr(usage, "prompt_tokens", 0) or 0,
+            tokens_out=getattr(usage, "completion_tokens", 0) or 0,
         )
 
 

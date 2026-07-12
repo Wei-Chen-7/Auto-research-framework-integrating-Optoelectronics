@@ -40,10 +40,16 @@ task_generation:             # random offsets from golden params (feasible by co
 
 llm:
   mode: mock                 # mock | api  (CLI --mock-llm / --api-llm overrides)
-  model: claude-opus-4-8
-  temperature: 0.0           # recorded for reproducibility; current Claude models
-  seed: 7                    # reject non-default sampling params so it is not sent.
-  max_tokens: 1024           # seed drives the deterministic mock policy.
+  provider: openai_compatible   # anthropic | openai_compatible
+  base_url: https://api.deepseek.com
+  api_key_env: DEEPSEEK_API_KEY
+  model: deepseek-chat
+  temperature: 0.0           # sent as-is on openai_compatible providers; the
+  seed: 7                    # anthropic provider records it without sending
+  max_tokens: 1024           # (current Claude models reject non-default sampling).
+                             # seed drives the deterministic mock policy.
+  # Anthropic instead: provider: anthropic / api_key_env: ANTHROPIC_API_KEY /
+  # model: claude-opus-4-8 / base_url: null
 
 r3:
   consecutive_task_failures: 3

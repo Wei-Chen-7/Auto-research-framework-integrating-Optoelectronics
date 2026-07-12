@@ -49,9 +49,18 @@ uv run python scripts/calibrate.py
 # 无 API key 冒烟（确定性脚本化代理，跑通全管道，指标数值不代表真实模型）
 uv run python -m picfix.experiments.run --config configs/coupler_v1.yaml --arm all --mock-llm
 
-# 正式运行（需要 ANTHROPIC_API_KEY；模型名在 configs/coupler_v1.yaml 的 llm.model）
+# 正式运行（默认配置为 DeepSeek：先 export DEEPSEEK_API_KEY=sk-...）
 uv run python -m picfix.experiments.run --config configs/coupler_v1.yaml --arm all --api-llm
 ```
+
+基座模型在 `configs/coupler_v1.yaml` 的 `llm` 区段配置，支持两类提供商：
+
+- `provider: openai_compatible`（默认，DeepSeek）：`base_url` + `api_key_env` + `model`
+  可切换到任何 OpenAI 兼容端点（OpenAI/Qwen/Kimi/GLM/…）
+- `provider: anthropic`：`api_key_env: ANTHROPIC_API_KEY`、`model: claude-opus-4-8`
+
+四臂必须共用同一基座模型（DESIGN.md §5/§11），报告中需固定并公开模型名与版本。
+正式跑请把 `experiment.repeats` 调为 3。
 
 产出写入 `runs/coupler_v1/<时间戳>/`：`metrics.csv` / `metrics.json`（全指标）、
 `comparison.png`（四臂对比图）、`task_results.jsonl`、各臂 append-only trace、
