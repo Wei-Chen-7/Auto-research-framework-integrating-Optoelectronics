@@ -1,0 +1,5 @@
+arm,tasks,success_rate,false_accept_rate,visible_passes,false_accepts,repeated_failure_rate,diagnose_accuracy,rollback_frequency,rollbacks,time_to_fix_median_s,time_to_fix_p90_s,tokens_per_success,sim_calls_per_success,total_sim_calls,total_tokens,sds_mean,convergence_rounds,r3_triggers,proposals_total,proposals_deployed,proposals_rejected,proposals_pending_human
+baseline,15,0.0,,0,0,1.0,,,0,,,,,30,5764,,,0,0,0,0,0
+fixed_loop,15,0.4666666666666667,0.36363636363636365,11,4,1.0,,,0,8.348420584999985,9.530089215399972,5686.285714285715,16.571428571428573,116,39804,,,0,0,0,0,0
+meta_unguarded,15,0.5333333333333333,0.2727272727272727,11,3,1.0,,,0,8.640182374999995,15.937315251700001,5583.375,15.875,127,44667,,,0,0,0,0,0
+meta_governed,15,0.4,0.45454545454545453,11,5,1.0,,,0,6.28007383049993,9.405921851499983,6380.5,18.833333333333332,113,38283,,,0,0,0,0,0
