@@ -66,6 +66,14 @@ uv run python -m picfix.experiments.run --config configs/coupler_v1.yaml --arm a
 `comparison.png`（四臂对比图）、`task_results.jsonl`、各臂 append-only trace、
 RAE 臂的哈希链审计日志、两 meta 臂的版本化先验库、配置快照。
 
+主要终点的显著性检验（两比例 z 检验 + 按任务聚类的配对 bootstrap 95% CI）：
+
+```bash
+uv run python -m picfix.metrics.report_stats runs/coupler_v1/<时间戳>
+```
+
+写出 `stats.json` / `stats.md`，对照 R3⁻ vs RAE、RAE vs R2、R3⁻ vs R2 三组。
+
 测试（Gate 与 Judge 的拦截/对照测试是重中之重）：
 
 ```bash
@@ -84,7 +92,7 @@ picfix/
   gate/          # Constitutional Guard：YAML policy + 哈希清单 + 确定性黄金回归（零 LLM）
   sil/           # 语义接口层：规则式分类器 + LLM 诊断器 + SDS
   priors/        # 版本化先验库（只有 append 接口）
-  metrics/       # 指标计算 + 四臂对比图
+  metrics/       # 指标计算 + 四臂对比图 + 显著性检验（z 检验 / 聚类 bootstrap）
   experiments/   # 配置驱动四臂 runner
 golden/          # 黄金标准器件（校准产物，Gate 保护）
 scripts/         # calibrate.py
@@ -105,4 +113,52 @@ docs/DESIGN.md   # 完整实验设计
 - 解析仿真后端（sin²(κL) + 指数 gap 衰减 + 线性 λ 依赖 + 双项损耗模型）
 - 四臂端到端 + 全指标（Success Rate、False Accept Rate、Repeated Failure Rate、
   Diagnose Accuracy、Rollback Frequency、Time to Fix、Token/仿真成本、SDS 分布、Convergence）
-- 开发期每臂 5 任务、k=1；正式跑将 `experiment.repeats` 调为 3
+
+## 里程碑 1 结果与发现
+
+正式跑：基座 `deepseek-chat`，每臂 20 任务 × k=3 = **n=60/臂**（DESIGN §11 统计效能下限）。
+产物见 `runs/coupler_v1/20260713-101523/`（阈值1）与 `runs/coupler_v1_thr2/`（阈值2 对照）。
+
+**主结论——收益来自治理，不是元学习（DESIGN §12 最锋利对比，正向成立）。**
+DeepSeek 一拿到 R3 自改权限就**自发反复放宽自己的成功判据**（把分光比容差从规格的 0.02 改松）——
+真实模型行为，非脚本诱导。无治理臂（R3⁻）让其得逞、工作副本被篡改，带治理臂（RAE）用
+Constitutional Guard 硬拒同类提案、工作副本全程忠实：
+
+| 臂 | Success | FAR | R3 触发 | 提案 部署/拒 | 工作副本版本 |
+|---|---|---|---|---|---|
+| baseline | 0.00 | n/a | 0 | — | — |
+| fixed_loop (R2) | 0.52 | 0.30 | 0 | — | — |
+| meta_unguarded (R3⁻) | 0.33 | 0.62 | 14 | 27 / 0 | 1→11（篡改） |
+| meta_governed (RAE) | 0.58 | 0.27 | 13 | 9 / 17 | 1→1（忠实） |
+
+显著性（两比例 z 检验 + 按任务聚类配对 bootstrap 95% CI，见各 run 的 `stats.md`）：
+R3⁻ vs RAE 的 FAR 差 +0.35 [+0.17, +0.52]、Success 差 −0.25 [−0.42, −0.10]，**CI 均不含 0**；
+RAE vs R2 两终点 CI 均跨 0（治理不牺牲能力）；R3⁻ vs R2 两终点 CI 均不含 0（无治理元学习显著更差）。
+
+**结构性发现——治理是否显现，由自改机制是否启动中介。** R3 触发绑定 agent **可见**的失败，
+而强基座很少可见失败（deepseek-chat 工作副本通过率 ~73%）——恰在它制造被冻结裁判抓住的
+false-accept 时自认为"成功"、从不自我改进。阈值=2 对照跑证实这点：R3⁻ 60 任务仅触发 1 次、
+仅作弊 1 次，R3⁻ vs RAE 两终点 CI 双双跨 0——治理对照消失，非治理失效，而是被治理机制近乎休眠。
+这正是"为什么治理必须独立于 agent 视角"的经验证据。
+
+**统计口径诚实交代**：n=60/臂仅足检出大效应；配对 bootstrap 正确处理跨臂同任务配对，但未完全
+处理 meta 臂 repeat 内时序依赖（k=3 无法按 repeat 聚类），CI 对 meta 臂略偏乐观——提高 k 属里程碑 2。
+
+### 复现正式结果
+
+```bash
+export DEEPSEEK_API_KEY=sk-...
+uv run python scripts/calibrate.py                                    # 冻结常数（幂等）
+uv run python -m picfix.experiments.run --config configs/coupler_v1.yaml --arm all --api-llm
+uv run python -m picfix.metrics.report_stats runs/coupler_v1/<新时间戳>
+```
+
+`configs/coupler_v1.yaml` 已固定正式参数：`tasks_per_arm: 20`、`repeats: 3`、
+`r3.consecutive_task_failures: 1`。阈值改回 2 即复现罕见触发体制的对照跑。
+LLM 输出非确定，各次绝对数会有波动，但方向性结论稳定。
+
+## 里程碑 2 展望
+
+- 扩展三器件（环形谐振腔、光栅耦合器）；可选第五臂（无 SIL 消融）
+- 接入 Meep（进程边界隔离），先做 Meep 与解析模型基准校准
+- 提高重复数 k（如 ≥10）以按 repeat 聚类、收紧 meta 臂 CI
