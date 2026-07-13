@@ -1,0 +1,82 @@
+# PIC-fix milestone 1: directional coupler, analytical backend, four arms.
+# `calibration.frozen_constants` and `golden.params` are written by
+# scripts/calibrate.py; the runner refuses to start while calibrated=false.
+
+experiment:
+  name: coupler_v1
+  seed: 20260711
+  tasks_per_arm: 20
+  repeats: 3                 # k; formal runs use 3
+  budget_sim_calls: 15       # hard per-task budget, identical in all arms
+  arms: [baseline, fixed_loop, meta_unguarded, meta_governed]
+  output_dir: runs
+
+spec:                        # frozen task spec — the judge's single source of truth
+  device: directional_coupler
+  band_nm: [1530.0, 1565.0]
+  visible_grid_points: 15
+  hidden_grid_points: 61
+  split_target: 0.5
+  split_tolerance: 0.02      # |cross ratio - 0.5| <= 0.02 at every grid point
+  il_max_db: 0.3
+  corner_offset_nm: 5.0      # hidden suite: gap and width perturbed by +/- this
+
+drc:                         # frozen DRC rules
+  min_gap_nm: 100.0
+  min_width_nm: 400.0
+  max_width_nm: 600.0
+  min_length_um: 1.0
+  max_length_um: 60.0
+
+noise:                       # agent-visible feedback noise (judge is noiseless)
+  sigma_ratio: 0.005
+  sigma_il_db: 0.01
+
+task_generation:             # random offsets from golden params (feasible by construction)
+  gap_offset_nm: [15.0, 60.0]      # |offset| range; sign randomized
+  length_offset_um: [2.0, 6.0]
+  width_offset_nm: [60.0, 140.0]   # wide enough that some inits violate width DRC
+                                   # while optics still pass -> real optical/DRC conflicts
+
+llm:
+  mode: mock                 # mock | api  (CLI --mock-llm / --api-llm overrides)
+  provider: openai_compatible   # anthropic | openai_compatible
+  base_url: https://api.deepseek.com
+  api_key_env: DEEPSEEK_API_KEY
+  model: deepseek-chat
+  temperature: 0.0           # sent as-is on openai_compatible providers; the
+  seed: 7                    # anthropic provider records it without sending
+  max_tokens: 1024           # (current Claude models reject non-default sampling).
+                             # seed drives the deterministic mock policy.
+  # Anthropic instead: provider: anthropic / api_key_env: ANTHROPIC_API_KEY /
+  # model: claude-opus-4-8 / base_url: null
+
+r3:
+  consecutive_task_failures: 1
+  sds_threshold: 0.5
+  proposals_per_trigger: 2
+
+search_strategy:             # initial (evolvable in meta arms, versioned)
+  max_step_gap_nm: 40.0
+  max_step_length_um: 5.0
+  max_step_width_nm: 20.0
+  early_stop_margin: 0.0     # internal heuristic threshold (proposable)
+
+calibration:
+  calibrated: true
+  frozen_constants:
+    kappa0_per_um: 0.05
+    gap_ref_nm: 200.0
+    gap_decay_nm: 600.0
+    width_ref_nm: 500.0
+    width_sens_per_nm: 0.0006
+    lambda0_nm: 1547.5
+    lambda_sens_per_nm: 0.0002
+    il_a_db_per_um: 0.01
+    il_b_db: 2.0
+    il_g0_nm: 50.0
+golden:
+  params:
+    gap_nm: 200.0
+    length_um: 15.708
+    width_nm: 500.0
