@@ -57,6 +57,9 @@ def test_r3_triggers_after_three_consecutive_failures(
 ) -> None:
     golden = cfg.golden_params()
     arm = make_unguarded(cfg, backend, tmp_path)
+    # test the trigger LOGIC at a fixed N=3, independent of the config's
+    # operating threshold (which is a tunable deployment knob, DESIGN §9)
+    arm.state.r3_consecutive_failures = 3
     arm.state.strategy.max_step_length_um = 0.01  # force visible failures
     far_off = DesignParams(gap_nm=golden.gap_nm, length_um=golden.length_um + 6.0,
                            width_nm=golden.width_nm)

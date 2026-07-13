@@ -4,12 +4,20 @@ from __future__ import annotations
 import csv
 import json
 
+from picfix.core.config import load_config
 from picfix.experiments.run import ARM_NAMES, run_experiment
 from tests.conftest import CONFIG_PATH
 
+_TASKS = 3
+
 
 def test_four_arms_end_to_end_mock() -> None:
-    out_dir = run_experiment(CONFIG_PATH, ARM_NAMES, llm_mode="mock", tasks_override=3)
+    # counts scale with the config's k (repeats); derive them rather than
+    # hard-coding, so tuning tasks_per_arm / repeats never breaks the smoke test
+    repeats = load_config(CONFIG_PATH).experiment.repeats
+    expected_per_arm = _TASKS * repeats
+
+    out_dir = run_experiment(CONFIG_PATH, ARM_NAMES, llm_mode="mock", tasks_override=_TASKS)
 
     assert (out_dir / "metrics.csv").exists()
     assert (out_dir / "comparison.png").exists()
@@ -19,14 +27,14 @@ def test_four_arms_end_to_end_mock() -> None:
         rows = list(csv.DictReader(f))
     assert [r["arm"] for r in rows] == list(ARM_NAMES)
     for row in rows:
-        assert int(row["tasks"]) == 3
+        assert int(row["tasks"]) == expected_per_arm
         assert 0.0 <= float(row["success_rate"]) <= 1.0
 
     results = [
         json.loads(line)
         for line in (out_dir / "task_results.jsonl").read_text().splitlines()
     ]
-    assert len(results) == 3 * len(ARM_NAMES)
+    assert len(results) == expected_per_arm * len(ARM_NAMES)
     # every arm respected the hard budget
     assert all(r["sim_calls"] <= 15 for r in results)
     # traces were appended for every arm

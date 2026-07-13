@@ -5,7 +5,7 @@
 experiment:
   name: coupler_v1
   seed: 20260711
-  tasks_per_arm: 5
+  tasks_per_arm: 20
   repeats: 3                 # k; formal runs use 3
   budget_sim_calls: 15       # hard per-task budget, identical in all arms
   arms: [baseline, fixed_loop, meta_unguarded, meta_governed]
@@ -52,7 +52,7 @@ llm:
   # model: claude-opus-4-8 / base_url: null
 
 r3:
-  consecutive_task_failures: 3
+  consecutive_task_failures: 1
   sds_threshold: 0.5
   proposals_per_trigger: 2
 
